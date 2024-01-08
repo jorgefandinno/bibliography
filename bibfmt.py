@@ -196,7 +196,8 @@ def splitname(name, strict_mode=True):
 
     # Group names of exceptional cases.
     if " ".join(name.split()) in data.GROUPING_NAMES:
-        name = data.GROUPING_NAMES[name]
+        name_t = data.GROUPING_NAMES[name]
+        return {'first': [name_t[0]], 'von': [name_t[1]], 'last': [name_t[2]], 'jr': [name_t[3]]} 
 
     # Whitespace characters that can separate words.
     whitespace = set(' ~\r\n\t')

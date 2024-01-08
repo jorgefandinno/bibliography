@@ -7,11 +7,15 @@ I have been using a modified version of the ```bibfmt``` program to further auto
 
 You can try it out by running the following command in the root directory of the repository:
 ```bash
-cp test.bib krr.bib && python bibfmt.py entries && diff test.bib krr.bib
+cp krr-test.bib krr.bib && python bibfmt.py entries && git diff --no-index -w krr-test.bib krr.bib
 ```
-It does not remove repeated entries, it only flags them.
-They can be removed by running ```python bibfmt.py clean```.
-It does not sort the entries either, so you can see them before committing the changes. It does well with most names, but the splitting of first/last names is in general abigous, so you may need to fix some of them manually. 
-```Juan Carlos Nieves``` should be parsed as ```{Juan Carlos} Nieves``` and ```Manuel Ojeda Aciego``` as ```Manuel {Ojeda Aciego}```. You can add the brackets to disambiguate. By default it parses the last two words as part of the last name unles the second is an abbreviation, ```Sheila A. McIlraith``` is parsed as ```{Sheila A.} McIlraith```. Thinks would become crazy the day the King of Spain decides to write a paper about ASP: ```Felipe Juan Pablo Alfonso de Todos los Santos de Borb{\'o}n y Grecia``` should be parsed as ```{Felipe Juan Pablo Alfonso de Todos los Santos} {de Borb{\'o}n y Grecia}```. You should still do ```python bibfmt.py format``` before committing.
+It does not remove repeated entries, it only flags them. They can be removed by running ```python bibfmt.py clean```.
+```
+python bibfmt.py clean && git diff --no-index -w krr-test.bib krr.bib
+```
+It keeps the entries in their original order, so you can see them before committing the changes. It does well with most names.
+In particular, all the names composed of two words. For names with more than two words the splitting of first/last names is in general abigous, so you may need to fix some of them manually: ```Juan Carlos Nieves``` should be parsed as ```{Juan Carlos} Nieves``` and ```Manuel Ojeda Aciego``` as ```Manuel {Ojeda Aciego}```. 
+
+You can add the brackets to disambiguate. By default it parses the last two words as part of the last name unles the second is an abbreviation, ```Sheila A. McIlraith``` is parsed as ```{Sheila A.} McIlraith```. A list of know exceptions is keept so no need to disambiguate them. It would become crazy the day the King of Spain decides to write a paper about ASP: ```Felipe Juan Pablo Alfonso de Todos los Santos de Borb{\'o}n y Grecia``` should be parsed as ```{Felipe Juan Pablo Alfonso de Todos los Santos} {de Borb{\'o}n y Grecia}```. You should still do ```python bibfmt.py format``` before committing.
 
 Somebody may find it useful.

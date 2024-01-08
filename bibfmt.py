@@ -454,7 +454,7 @@ def name_parts_to_str(name_parts):
 
 
 def format_first_name(name: str) -> str:
-    if len(name) > 2 and "{" not in name[:2] and "\\" not in name[:2]:
+    if len(name) > 2 and not name.startswith("{\\"):
         name = f"{name[0]}."
     return name
 
@@ -597,7 +597,7 @@ def format_bib_entries(path, *, procs_db=None, return_modified=False):
             id_match = ID_RE.match(new_entry["ID"])
             if id_match is not None:
                 id_base = "".join(id_match.groups()[:2])
-                if entry["ENTRYTYPE"].lower() != "proceedings" and id_base in db_dict:
+                if entry["ENTRYTYPE"].lower() != "proceedings" and entry["ID"].startswith("DBLP:") and id_base in db_dict:
                     for db_entry in db_dict[id_base]:
                         if _similar_entries(new_entry, db_entry):
                             db_entry_id = db_entry["ID"]

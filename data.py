@@ -22,6 +22,8 @@ EXCLUDE_IDS = {
     'vldb06',
     'ruleml22',
     'datalog10',
+    'dix92b',
+    'leasombe90',
 }
 
 WHOLE_NAMES = {

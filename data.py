@@ -96,7 +96,7 @@ JOURNAL_MAPPING = {
 SKIP_JOURNALS = { 'ai' }
 
 GROUPING_NAMES = {
-    'Juan Carlos Nieves' : ('Juan Carlos', '', 'Nieves', ''),
-    'Tran Cao Son' : ('Tran Son', '', 'Cao', ''),
-    'Cesar Augusto Tacla' : ('Cesar Augusto', '', 'Tacla', ''),
+    'Juan Carlos Nieves' : 'Juan Carlos | Nieves',
+    'Tran Cao Son' : 'Tran Son | Cao',
+    'Cesar Augusto Tacla' : 'Cesar Augusto | Tacla',
 }

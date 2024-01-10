@@ -196,8 +196,10 @@ def splitname(name, strict_mode=True):
 
     # Group names of exceptional cases.
     if " ".join(name.split()) in data.GROUPING_NAMES:
-        name_t = data.GROUPING_NAMES[name]
-        return {'first': [name_t[0]], 'von': [name_t[1]], 'last': [name_t[2]], 'jr': [name_t[3]]} 
+        name_parts =  [word.strip() for word in data.GROUPING_NAMES[name].split("|")]
+        name_parts = name_parts[1:] + name_parts[:1]
+        name = ",".join(name_parts)
+
 
     # Whitespace characters that can separate words.
     whitespace = set(' ~\r\n\t')
@@ -373,9 +375,11 @@ def splitname(name, strict_mode=True):
             num_capitals = sum(cases)
             if num_capitals > 2:
                 capital_position = [i for i,e in enumerate(cases) if e]
-                third_to_last_captilized = capital_position[-3] + 1
-                parts['first'] = p0[:third_to_last_captilized]
-                parts['last'] = p0[third_to_last_captilized:]
+                third_to_last_captilized = capital_position[-3]
+                second_to_last_captilized = capital_position[-2]
+                parts['first'] = p0[:third_to_last_captilized+1]
+                parts['von'] = p0[third_to_last_captilized+1:second_to_last_captilized]
+                parts['last'] = p0[second_to_last_captilized:]
             else:
                 parts['first'] = p0[:1]
                 parts['last'] = p0[1:]
@@ -420,6 +424,7 @@ def splitname(name, strict_mode=True):
 
     # Done.
     return parts
+
 
 def join_names_parts(name_parts: dict) -> dict:
     '''

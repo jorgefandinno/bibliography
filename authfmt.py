@@ -118,40 +118,9 @@ def _writer(sorted_entries=True):
     writer.display_order = ['title', 'author', 'editor']
     return writer
 
-def _fixdb(db):
-    '''
-    Currently sorts the strings in the database.
-    '''
-    db.strings = OrderedDict(sorted(db.strings.items()))
-    return db
 
-def format_bib(path):
-    '''
-    Format the given bibliography file.
-    '''
-    # read bibliography
-    with open(path, "r") as f:
-        db = _fixdb(bp.load(f, _parser()))
 
-    # write the bibliography
-    with open(path, "w") as f:
-        bp.dump(db, f, _writer())
 
-def check_bib(path):
-    '''
-    Check if the given bibliography is correctly formatted.
-    '''
-    # read bibliography
-    with open(path, "r") as f:
-        in_ = f.read()
-
-    db = _fixdb(bp.loads(in_, _parser()))
-
-    # write the bibliography
-    out = StringIO()
-    bp.dump(db, out, _writer())
-
-    return [x for x in ndiff(in_.splitlines(), out.getvalue().splitlines()) if x[0] != ' ']
 
 def splitname(name, strict_mode=True):
     """
@@ -521,13 +490,6 @@ def _new_id(id_base, year, existing_ids=set()):
             if new_id not in existing_ids:
                 return new_id
 
-def _dblp_crossref_to_id(crossref):
-    '''
-    Convert a DBLP crossref to an id.
-    '''
-    _, crossref_key, year = crossref.split("/")
-    year = year[-2:] if len(year) > 2 else year
-    return crossref_key + year
 
 def _format_bib_entry(entry, existing_ids, db, procs_db):
     new_entry = entry.copy()
@@ -544,25 +506,11 @@ def _format_bib_entry(entry, existing_ids, db, procs_db):
         new_entry['editor'], modified_editors = format_names(new_entry['editor'])
     else:
         modified_editors = set()
-    if "journal" in entry and isinstance(entry["journal"], str) and entry["journal"] in data.JOURNAL_MAPPING:
-        bib_string = BibDataStringExpression([BibDataString(db, data.JOURNAL_MAPPING[entry["journal"]])])
-        new_entry["journal"] = bib_string
-    if procs_db is not None and entry["ENTRYTYPE"].lower() == "inproceedings" and "crossref" in entry and entry["crossref"].startswith("DBLP:"):
-        crossref = _dblp_crossref_to_id(entry["crossref"])
-        if crossref in procs_db.entries_dict:
-            new_entry["crossref"] = crossref
-            new_entry.pop("booktitle", None)
-            new_entry.pop("year", None)
-        
 
     if new_entry == entry:
         return entry, set()
     return new_entry, modified_authors | modified_editors
 
-def _similar_entries(entry1, entry2):
-    title1 = NON_ALPHANUMERIC_RE.sub("", entry1.get("title", "").lower())
-    title2 = NON_ALPHANUMERIC_RE.sub("", entry2.get("title", "").lower())
-    return title1 == title2
 
 
 def format_bib_entries(path, *, procs_db=None, return_modified=False):
@@ -571,7 +519,7 @@ def format_bib_entries(path, *, procs_db=None, return_modified=False):
     '''
     # read bibliography
     with open(path, "r") as f:
-        db = _fixdb(bp.load(f, _parser()))
+        db = bp.load(f, _parser())
 
     existing_ids = set(entry["ID"] for entry in db.entries)
     modified_people = set() if return_modified else None
@@ -626,24 +574,6 @@ def format_bib_entries(path, *, procs_db=None, return_modified=False):
         return modified_ids, modified_people
     
 
-def clean_bib(path):
-    '''
-    Format the given bibliography file.
-    '''
-    # read bibliography
-    with open(path, "r") as f:
-        db = _fixdb(bp.load(f, _parser()))
-
-    new_entries = []
-    for entry in db.entries:
-        if not entry["ID"].startswith("REPEATED:") and not entry["ID"].startswith("DBLP:"):
-            new_entries.append(entry)
-
-    db.entries = new_entries
-
-    # write the bibliography
-    with open(path, "w") as f:
-        bp.dump(db, f, _writer(sorted_entries=False))
 
 def run():
     '''
@@ -677,20 +607,11 @@ def run():
 
     argcomplete.autocomplete(parser)
     res = parser.parse_args()
-
-    if res.command == "format":
-        format_bib('krr.bib')
-        format_bib('procs.bib')
-        return 0
     
     if res.command == "entries":
         procs = format_bib_entries('procs.bib')
-        format_bib_entries('krr.bib', procs_db=procs)
+        format_bib_entries('krr2.bib', procs_db=procs)
         # format_bib_entries('jorge.bib', procs_db=procs)
-        return 0
-    
-    if res.command == "clean":
-        clean_bib('krr.bib')
         return 0
     
     if res.command == "data":

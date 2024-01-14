@@ -74,6 +74,8 @@ def similar_venue(entry, dblp_entry):
     Check if the two entries have similar venue.
     """
     venue_type = entry["ENTRYTYPE"]
+    if venue_type not in ("proceedings", "article"):
+        return False
     if "ID" not in dblp_entry:
         return False
     _, _, dblp_id = dblp_entry["ID"].split("$")
@@ -90,7 +92,7 @@ def similar_venue(entry, dblp_entry):
             return False
         print(entry["journal"], "\t", dblp_entry["ID"], "\t", dblp_entry["journal"], "\n")
         return True
-    return venue_id == dblp_venue_id
+    return venue_id.lower() == dblp_venue_id.lower()
 
 
 def are_similar_entries(entry, dblp_entry, match_venue=True):

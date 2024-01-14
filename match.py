@@ -1,6 +1,6 @@
 import re
 import bibtexparser as bp
-from bibtexparser.bibdatabase import as_text
+from bibtexparser.bibdatabase import BibDataStringExpression, as_text
 from splitnames import splitname
 from authfmt import format_name_dict, split_names_to_strs
 from bibfmt import _parser
@@ -78,8 +78,8 @@ def similar_venue(entry, dblp_entry):
         return False
     if "ID" not in dblp_entry:
         return False
-    _, _, dblp_id = dblp_entry["ID"].split("$")
-    _, dblp_venue_id, _ = dblp_id.split("/")
+    dblp_id = dblp_entry["ID"].split("$")[2]
+    dblp_venue_id = dblp_id.split("/")[1]
     if venue_type == "proceedings":
         if "crossref" not in entry or not dblp_id.startswith("DBLP:conf/"):
             return False
@@ -90,8 +90,11 @@ def similar_venue(entry, dblp_entry):
     if venue_type == "article":
         if "journal" not in entry or not dblp_id.startswith("DBLP:journals/"):
             return False
-        print(entry["journal"], "\t", dblp_entry["ID"], "\t", dblp_entry["journal"], "\n")
-        return True
+        journal = entry["journal"]
+        if isinstance(journal, BibDataStringExpression) and len(journal.expr) == 1:
+            return journal.expr[0].name.lower() == dblp_venue_id.lower()
+        if isinstance(journal, str):
+            return journal.lower() == dblp_entry["journal"].lower()
     return venue_id.lower() == dblp_venue_id.lower()
 
 
@@ -151,7 +154,7 @@ with open("dblp1.bib", "r") as f:
     in_ = f.read()
 dblp_db = bp.loads(in_, _parser())
 
-similar_entries, weakly_similar_entries = find_similar_entries(db, dblp_db)
+similar_entries, weakly_similar_entries = find_similar_entries(db, dblp_db, match_venue=True)
 
 # pprint(similar_entries)
 # print(80*"=")
@@ -165,3 +168,22 @@ similar_entries, weakly_similar_entries = find_similar_entries(db, dblp_db)
 # print(80*"=")
 # print("Multiple matches in weakly similar entries:")
 # pprint({k: v for k, v in weakly_similar_entries.items() if len(v) > 1})
+
+similar_entries2, weakly_similar_entries2 = find_similar_entries(db, dblp_db, match_venue=False)
+
+similar_entries2 = {k: v for k, v in similar_entries2.items() if k not in similar_entries and k not in weakly_similar_entries}
+weakly_similar_entries2 = {k: v for k, v in weakly_similar_entries2.items() if k not in similar_entries and k not in weakly_similar_entries}
+
+print(80*"=")
+pprint(similar_entries2)
+print(80*"=")
+pprint(weakly_similar_entries2)
+print("Total similar entries:", len(similar_entries2))
+print("Total weakly similar entries:", len(weakly_similar_entries2))
+print(80*"=")
+print("Multiple matches in similar entries:")
+pprint({k: v for k, v in similar_entries2.items() if len(v) > 1})
+print(80*"=")
+print("Multiple matches in weakly similar entries:")
+pprint({k: v for k, v in weakly_similar_entries2.items() if len(v) > 1})
+

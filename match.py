@@ -88,7 +88,7 @@ def similar_venue(entry, dblp_entry):
     if venue_type == "article":
         if "journal" not in entry or not dblp_id.startswith("DBLP:journals/"):
             return False
-        print(entry["journal"], dblp_entry["ID"], dblp_entry["journal"]")
+        print(entry["journal"], "\t", dblp_entry["ID"], "\t", dblp_entry["journal"], "\n")
         return True
     return venue_id == dblp_venue_id
 

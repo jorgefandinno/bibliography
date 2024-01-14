@@ -71,7 +71,7 @@ def split_latex_to_sections(latex_string: str, strict_mode=True) -> tuple[list[l
                 level -= 1
             else:
                 if strict_mode:
-                    raise bp.customization.InvalidName("Unmatched closing brace in name {{{0}}}.".format(name))
+                    raise bp.customization.InvalidName("Unmatched closing brace in name {{{0}}}.".format(latex_string))
                 word.insert(0, '{')
 
             # Update the state, append the character, and move on.
@@ -117,7 +117,7 @@ def split_latex_to_sections(latex_string: str, strict_mode=True) -> tuple[list[l
                     sections.append([])
                     cases.append([])
                 elif strict_mode:
-                    raise bp.customization.InvalidName("Too many commas in the name {{{0}}}.".format(name))
+                    raise bp.customization.InvalidName("Too many commas in the name {{{0}}}.".format(latex_string))
             continue
 
         # Regular character.
@@ -131,7 +131,7 @@ def split_latex_to_sections(latex_string: str, strict_mode=True) -> tuple[list[l
     # Unterminated brace?
     if level:
         if strict_mode:
-            raise bp.customization.InvalidName("Unterminated opening brace in the name {{{0}}}.".format(name))
+            raise bp.customization.InvalidName("Unterminated opening brace in the name {{{0}}}.".format(latex_string))
         while level:
             word.append('}')
             level -= 1
@@ -223,22 +223,23 @@ def splitname(name, strict_mode=True):
             parts['first'] = p0[:1]
             parts['last'] = p0[1:]
 
-        # Need to use the cases to figure it out.
-        elif len(p0) > 2 and p0[1][1] == ".":
-            parts['first'] = p0[:2]
-            parts['last'] = p0[2:]
+        # Need to use the cases to figure it out.               
+        # elif len(p0) > 2 and p0[1][1] == ".":
+        #     parts['first'] = p0[:2]
+        #     parts['last'] = p0[2:]
         else:
-            num_capitals = sum(cases)
-            if num_capitals > 2:
-                capital_position = [i for i,e in enumerate(cases) if e]
-                third_to_last_captilized = capital_position[-3]
-                second_to_last_captilized = capital_position[-2]
-                parts['first'] = p0[:third_to_last_captilized+1]
-                parts['von'] = p0[third_to_last_captilized+1:second_to_last_captilized]
-                parts['last'] = p0[second_to_last_captilized:]
-            else:
-                parts['first'] = p0[:1]
-                parts['last'] = p0[1:]
+            capital_position_no_abbrv = [i for i,e in enumerate(zip(p0,cases)) if e[1] and e[0][1] != "."]
+            # print(f"{capital_position_no_abbrv=}")
+            num_capitals_no_abbrv = len(capital_position_no_abbrv)
+            # if the first word is abbreviated, then the last name starts with the first capitalized word that is not abbreviated
+            # if the first word is not abbreviated, then this is the begining of the first name and the last name starts with the second capitalized word that is not abbreviated
+            last_begin = capital_position_no_abbrv[0] if capital_position_no_abbrv[0] != 0 else capital_position_no_abbrv[1]
+            lower_positions = [i for i,e in enumerate(cases) if i < last_begin and not e]
+            von_begin = lower_positions[0] if lower_positions else last_begin
+            parts['first'] = p0[:von_begin]
+            parts['von'] = p0[von_begin:last_begin]
+            parts['last'] = p0[last_begin:]
+
 
 
     # Form 2 ("von Last, First") or 3 ("von Last, jr, First")
@@ -280,3 +281,13 @@ def splitname(name, strict_mode=True):
 
     # Done.
     return parts
+
+# # print(splitname("John von Neumann"))
+# print(splitname("Christopher K. I. Williams "))
+# print(splitname("Christopher K. I. von Williams "))
+# # print(splitname("Christopher von K. I. Williams "))
+# print(splitname("Christopher K. I. Williams Smith"))
+# print(splitname("Christopher K. I. von Williams Smith"))
+# print(splitname("Christopher K. I. Williams Smith von"))
+# print(splitname("C. K. I. Williams Smith von"))
+# print(splitname("V. S. Subrahmanian"))

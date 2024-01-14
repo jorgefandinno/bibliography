@@ -2,7 +2,7 @@ import re
 import bibtexparser as bp
 from bibtexparser.bibdatabase import BibDataStringExpression, as_text
 from splitnames import splitname
-from authfmt import format_name_dict, split_names_to_strs
+from authfmt import format_name_dict, split_names_to_strs, CONFIG
 from bibfmt import _parser
 
 from pprint import pprint
@@ -40,62 +40,42 @@ def split_names_to_dicts(names: str) -> list[dict]:
     '''
     return [splitname(name) for name in split_names_to_strs(names)]
 
-def similar_venue_proceedings(entry, dblp_entry):
-    """
-    Check if the two proceedings entries have similar venue.
-    """
-    if "crossref" not in entry or "ID" not in dblp_entry:
-        return False
-    _, _, dblp_id = dblp_entry["ID"].split("$")
-    if not dblp_id.startswith("DBLP:conf/"):
-        return False
-    re_match = RE_ID.match(entry["crossref"])
-    if not re_match:
-        return False
-    conf_id = re_match.group(1)
-    _, dblp_conf_id, _ = dblp_id.split("/")
-    return conf_id == dblp_conf_id
-
-def similar_venue_article(entry, dblp_entry):
-    """
-    Check if the two article entries have similar venue.
-    """
-    if "journal" not in entry or "ID" not in dblp_entry:
-        return False
-    _, _, dblp_id = dblp_entry["ID"].split("$")
-    if not dblp_id.startswith("DBLP:journals/"):
-        return False
-    print(entry["journal"], dblp_entry["ID"])
-    return True
-
+CONFIG_CONF_MAPPING = CONFIG["conf_mapping"]
+CONFIG_JOURNAL_BIB_STRING_MAPPING = CONFIG["journal_bib_string_mapping"]
 
 def similar_venue(entry, dblp_entry):
     """
     Check if the two entries have similar venue.
     """
     venue_type = entry["ENTRYTYPE"]
-    if venue_type not in ("proceedings", "article"):
+    if venue_type not in ("inproceedings", "article"):
         return False
     if "ID" not in dblp_entry:
         return False
     dblp_id = dblp_entry["ID"].split("$")[2]
     dblp_venue_id = dblp_id.split("/")[1]
-    if venue_type == "proceedings":
+    if venue_type == "inproceedings":
         if "crossref" not in entry or not dblp_id.startswith("DBLP:conf/"):
             return False
         re_match = RE_ID.match(entry["crossref"])
         if not re_match:
             return False
         venue_id = re_match.group(1)
+        if dblp_id in CONFIG_CONF_MAPPING:
+            dblp_venue_id = CONFIG_CONF_MAPPING[dblp_venue_id]
+            return venue_id.lower() == dblp_venue_id.lower()
     if venue_type == "article":
         if "journal" not in entry or not dblp_id.startswith("DBLP:journals/"):
             return False
         journal = entry["journal"]
+        if dblp_venue_id in CONFIG_JOURNAL_BIB_STRING_MAPPING:
+            print(dblp_venue_id, CONFIG_JOURNAL_BIB_STRING_MAPPING[dblp_venue_id], venue_id)
+            return venue_id.lower() == CONFIG_JOURNAL_BIB_STRING_MAPPING[dblp_venue_id]
         if isinstance(journal, BibDataStringExpression) and len(journal.expr) == 1:
             return journal.expr[0].name.lower() == dblp_venue_id.lower()
         if isinstance(journal, str):
             return journal.lower() == dblp_entry["journal"].lower()
-    return venue_id.lower() == dblp_venue_id.lower()
+    assert False, "Unrecognized venue type""    
 
 
 def are_similar_entries(entry, dblp_entry, match_venue=True):
@@ -154,7 +134,30 @@ with open("dblp1.bib", "r") as f:
     in_ = f.read()
 dblp_db = bp.loads(in_, _parser())
 
-similar_entries, weakly_similar_entries = find_similar_entries(db, dblp_db, match_venue=True)
+similar_entries, weakly_similar_entries = find_similar_entries(db, dblp_db, match_venue=False)
+
+journal_bib_string_mapping = {}
+journal_literal_string_mapping = {}
+
+for k, v in similar_entries.items():
+    if db.entries_dict[k]["ENTRYTYPE"] != "article" or len(v) != 1:
+        continue
+    journal = db.entries_dict[k]["journal"]
+    dblp_journal = dblp_db.entries_dict[v[0]]["ID"].split("$")[2].split("/")[1]
+    if isinstance(journal, BibDataStringExpression) and len(journal.expr) == 1:
+        journal_bib_string_mapping[dblp_journal] = journal.expr[0].name
+    elif isinstance(journal, str) and journal not in CONFIG_JOURNAL_BIB_STRING_MAPPING:
+        dblp_journal = dblp_db.entries_dict[v[0]]["journal"]
+        journal_literal_string_mapping[dblp_journal] = journal
+    else:
+        print("ERROR", journal)
+
+journal_bib_string_mapping = {k: v for k, v in journal_bib_string_mapping.items() if k != v}
+journal_literal_string_mapping = {k: v for k, v in journal_literal_string_mapping.items() if k != v}
+
+pprint(journal_bib_string_mapping)
+print(80*"=")
+pprint(journal_literal_string_mapping)
 
 # pprint(similar_entries)
 # print(80*"=")
@@ -174,16 +177,26 @@ similar_entries2, weakly_similar_entries2 = find_similar_entries(db, dblp_db, ma
 similar_entries2 = {k: v for k, v in similar_entries2.items() if k not in similar_entries and k not in weakly_similar_entries}
 weakly_similar_entries2 = {k: v for k, v in weakly_similar_entries2.items() if k not in similar_entries and k not in weakly_similar_entries}
 
-print(80*"=")
-pprint(similar_entries2)
-print(80*"=")
-pprint(weakly_similar_entries2)
-print("Total similar entries:", len(similar_entries2))
-print("Total weakly similar entries:", len(weakly_similar_entries2))
-print(80*"=")
-print("Multiple matches in similar entries:")
-pprint({k: v for k, v in similar_entries2.items() if len(v) > 1})
-print(80*"=")
-print("Multiple matches in weakly similar entries:")
-pprint({k: v for k, v in weakly_similar_entries2.items() if len(v) > 1})
+# similar_entries2 = {k: v for k, v in similar_entries2.items() if db.entries_dict[k]["ENTRYTYPE"] == "inproceedings" and "crossref" in db.entries_dict[k]}
+# weakly_similar_entries2 = {k: v for k, v in weakly_similar_entries2.items() if db.entries_dict[k]["ENTRYTYPE"] == "inproceedings" and "crossref" in db.entries_dict[k]}
+
+similar_entries2 = {k: v for k, v in similar_entries2.items() if db.entries_dict[k]["ENTRYTYPE"] == "article"}
+weakly_similar_entries2 = {k: v for k, v in weakly_similar_entries2.items() if db.entries_dict[k]["ENTRYTYPE"] == "article"}
+
+# print(80*"=")
+# pprint(similar_entries2)
+# print(80*"=")
+# pprint(weakly_similar_entries2)
+
+
+
+
+# print("Total similar entries:", len(similar_entries2))
+# print("Total weakly similar entries:", len(weakly_similar_entries2))
+# print(80*"=")
+# print("Multiple matches in similar entries:")
+# pprint({k: v for k, v in similar_entries2.items() if len(v) > 1})
+# print(80*"=")
+# print("Multiple matches in weakly similar entries:")
+# pprint({k: v for k, v in weakly_similar_entries2.items() if len(v) > 1})
 

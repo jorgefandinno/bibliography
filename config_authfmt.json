@@ -4,5 +4,19 @@
         "Juan Carlos Nieves" : "Juan Carlos | Nieves",
         "Tran Cao Son" : "Tran Son | Cao",
         "Cesar Augusto Tacla" : "Cesar Augusto | Tacla"
+    },
+
+    "conf_mapping" : {
+        "atal" : "aamas"
+    },
+
+    "journal_bib_string_mapping" : {
+        "ai": "aij",
+        "corr": "tplp",
+        "csur": "acmcs",
+        "jods": "jds",
+        "jsyml": "jsl",
+        "logcom": "jlc",
+        "sttt": "jsttt"
     }
 }

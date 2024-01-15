@@ -228,7 +228,7 @@ def splitname(name, strict_mode=True):
         #     parts['first'] = p0[:2]
         #     parts['last'] = p0[2:]
         else:
-            capital_position_no_abbrv = [i for i,e in enumerate(zip(p0,cases)) if e[1] and e[0][1] != "."]
+            capital_position_no_abbrv = [i for i,e in enumerate(zip(p0,cases)) if e[1] and e[0][-1] != "."]
             # print(f"{capital_position_no_abbrv=}")
             num_capitals_no_abbrv = len(capital_position_no_abbrv)
             # if the first word is abbreviated, then the last name starts with the first capitalized word that is not abbreviated
@@ -282,12 +282,26 @@ def splitname(name, strict_mode=True):
     # Done.
     return parts
 
-# # print(splitname("John von Neumann"))
-# print(splitname("Christopher K. I. Williams "))
-# print(splitname("Christopher K. I. von Williams "))
-# # print(splitname("Christopher von K. I. Williams "))
-# print(splitname("Christopher K. I. Williams Smith"))
-# print(splitname("Christopher K. I. von Williams Smith"))
-# print(splitname("Christopher K. I. Williams Smith von"))
-# print(splitname("C. K. I. Williams Smith von"))
-# print(splitname("V. S. Subrahmanian"))
+
+# join = lambda x: " ".join((" ".join(x["first"]), "|", " ".join(x["von"]), "|", " ".join(x["last"]), "|", " ".join(x["jr"])))
+# def assert_split(name, expected):
+#     got = " ".join(join(splitname(name)).split())
+#     expected = " ".join(expected.split())
+#     assert got == expected, f"{got=}, {expected=}"
+# assert_split("John von Neumann", "John | von | Neumann | ")
+# assert_split("John von Neumann Smith", "John | von | Neumann Smith | ")
+# assert_split("Christopher K. I. Williams", "Christopher K. I. | | Williams | ")
+# assert_split("Christopher K. I. von Williams", "Christopher K. I. | von | Williams | ")
+# assert_split("Christopher K. I. von Williams Smith", "Christopher K. I. | von | Williams Smith | ")
+# assert_split("Luis Fari{\~n}as del Cerro", "Luis | | Fari{\\~n}as del Cerro | ")
+# assert_split("Luis {Fari{\~n}as del Cerro}", "Luis | | {Fari{\\~n}as del Cerro} | ")    
+# assert_split("Jose L. Fari{\~n}as del Cerro Smith", "Jose L. | | Fari{\\~n}as del Cerro Smith | ")
+# assert_split("Jose Li. Fari{\~n}as del Cerro Smith", "Jose Li. | | Fari{\\~n}as del Cerro Smith | ")
+# assert_split("Aa", " | | Aa | ")
+# assert_split("Aa.", " | | Aa. | ")
+# assert_split("Aa. Bb", "Aa. | | Bb | ")
+# assert_split("Aa. Bb.", "Aa. | | Bb. | ")
+# assert_split("Aa. Bb Cc", "Aa. | | Bb Cc | ")
+# assert_split("Aa. Bb. Cc", "Aa. Bb. | | Cc | ")
+# assert_split("Aa. Bb Cc.", "Aa. | | Bb Cc. | ")
+# assert_split("Aa. Bb Cc. Dd", "Aa. | | Bb Cc. Dd | ")
